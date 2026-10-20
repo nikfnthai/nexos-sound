@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Nexos Sound Mobile</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    body { background-color: #0b0f19; color: #ffffff; display: flex; flex-direction: column; min-height: 100vh; }
+    
+    header { background: #161f30; padding: 20px; text-align: center; border-bottom: 1px solid #233149; }
+    header h1 { color: #38bdf8; font-size: 24px; font-weight: 800; }
+    header p { color: #64748b; font-size: 12px; margin-top: 4px; }
+
+    .tabs { display: flex; background: #111827; border-bottom: 1px solid #233149; }
+    .tab-btn { flex: 1; padding: 14px; background: none; border: none; color: #94a3b8; font-weight: bold; font-size: 13px; cursor: pointer; }
+    .tab-btn.active { color: #38bdf8; border-bottom: 2px solid #38bdf8; background: #161f30; }
+
+    .container { padding: 20px; flex: 1; max-width: 450px; margin: 0 auto; width: 100%; }
+    
+    .pro-banner { background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(217, 119, 6, 0.15)); border: 1px solid #f59e0b; border-radius: 12px; padding: 12px; margin-bottom: 20px; text-align: center; font-size: 12px; color: #fbbf24; }
+    .pro-banner strong { color: #fff; cursor: pointer; text-decoration: underline; }
+
+    .form-group { margin-bottom: 18px; }
+    label { display: block; font-size: 11px; text-transform: uppercase; color: #94a3b8; font-weight: bold; margin-bottom: 6px; }
+    input[type="text"], input[type="tel"], select { width: 100%; padding: 14px; background: #161f30; border: 1px solid #233149; border-radius: 10px; color: #fff; font-size: 15px; outline: none; }
+
+    .range-box { display: flex; align-items: center; gap: 12px; }
+    .range-box input { flex: 1; }
+
+    .btn-main { width: 100%; padding: 16px; background: linear-gradient(135deg, #0284c7, #2563eb); border: none; border-radius: 12px; color: #fff; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; box-shadow: 0 4px 15px rgba(2, 132, 199, 0.4); }
+    .btn-main:active { transform: scale(0.98); }
+
+    .bt-scan-box { background: #161f30; border: 1px dashed #334155; border-radius: 12px; padding: 15px; text-align: center; margin-bottom: 15px; }
+    .device-list { margin-top: 10px; text-align: left; }
+    .device-item { padding: 10px; background: #0b0f19; border: 1px solid #233149; border-radius: 8px; margin-top: 6px; font-size: 13px; display: flex; justify-content: space-between; align-items: center; }
+
+    #status { margin-top: 20px; text-align: center; font-size: 13px; font-weight: bold; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Nexos Sound 🎙️🔊</h1>
+    <p>Scherzi Sonori & Sveglie Remote / Bluetooth</p>
+  </header>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('remote')">🌐 MODALITÀ REMOTA</button>
+    <button class="tab-btn" onclick="switchTab('bluetooth')">📡 BLUETOOTH LOCALE</button>
+  </div>
+
+  <div class="container">
+    
+    <div class="pro-banner">
+      Piano Attuale: <span id="plan-type">FREE (3 invii/giorno)</span> • <strong onclick="upgradePro()">PASSA A PRO (1,99€/mese)</strong>
+    </div>
+
+    <!-- MODALITA' REMOTA (INTERNET / FCM) -->
+    <div id="remote-tab" class="tab-content active">
+      <div class="form-group">
+        <label for="targetPhone">Numero Amico (+39...)</label>
+        <input type="tel" id="targetPhone" placeholder="+39 333 1234567">
+      </div>
+
+      <div class="form-group">
+        <label for="remoteSound">Seleziona Suono (Voicemod)</label>
+        <select id="remoteSound">
+          <option value="https://www.soundjay.com/mechanical/sounds/siren-01.mp3">🚨 Allarme Nucleare</option>
+          <option value="https://www.soundjay.com/human/screaming-man-01.mp3">😱 Urlo Spaventoso</option>
+          <option value="https://www.soundjay.com/clock/sounds/alarm-clock-1.mp3">⏰ Sveglia Insopportabile</option>
+          <option value="custom">➕ Carica da Voicemod (.mp3)...</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Volume Altoparlante Remoto</label>
+        <div class="range-box">
+          <input type="range" id="remoteVolume" min="10" max="100" value="100">
+          <span id="volLabel">100%</span>
+        </div>
+      </div>
+
+      <button class="btn-main" onclick="sendRemoteSound()">AVVIA SCHERZO REMOTO</button>
+    </div>
+
+    <!-- MODALITA' BLUETOOTH -->
+    <div id="bluetooth-tab" class="tab-content">
+      <div class="bt-scan-box">
+        <p style="font-size: 13px; color: #94a3b8;">Cerca dispositivi/telefoni nelle vicinanze (Max 10 metri)</p>
+        <button class="btn-main" style="padding: 10px; font-size: 13px; margin-top: 10px;" onclick="scanBluetooth()">🔍 CERCA DISPOSITIVI BLUETOOTH</button>
+        <div class="device-list" id="deviceList"></div>
+      </div>
+
+      <div class="form-group">
+        <label for="btSound">Suono da Trasmettere</label>
+        <select id="btSound">
+          <option value="https://www.soundjay.com/human/screaming-man-01.mp3">😱 Urlo Spaventoso</option>
+          <option value="https://www.soundjay.com/mechanical/sounds/siren-01.mp3">🚨 Allarme</option>
+        </select>
+      </div>
+
+      <button class="btn-main" style="background: linear-gradient(135deg, #10b981, #059669);" onclick="sendBluetoothSound()">RIPRODUCI VIA BLUETOOTH</button>
+    </div>
+
+    <div id="status"></div>
+
+  </div>
+
+  <script>
+    let isPro = false;
+
+    function switchTab(tab) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      
+      if(tab === 'remote') {
+        document.querySelectorAll('.tab-btn')[0].classList.add('active');
+        document.getElementById('remote-tab').classList.add('active');
+      } else {
+        document.querySelectorAll('.tab-btn')[1].classList.add('active');
+        document.getElementById('bluetooth-tab').classList.add('active');
+      }
+    }
+
+    document.getElementById('remoteVolume').addEventListener('input', (e) => {
+      document.getElementById('volLabel').innerText = e.target.value + '%';
+    });
+
+    function upgradePro() {
+      alert("Nexos Sound PRO - 1,99€/mese\n\n- Invii illimitati via internet e Bluetooth\n- Suoni personalizzati da Voicemod\n- Volume forzato al 100%");
+      isPro = true;
+      document.getElementById('plan-type').innerText = "PRO (Illimitato)";
+      document.getElementById('plan-type').style.color = "#f59e0b";
+    }
+
+    async function sendRemoteSound() {
+      const phone = document.getElementById('targetPhone').value;
+      const sound = document.getElementById('remoteSound').value;
+      const volume = document.getElementById('remoteVolume').value;
+      const statusDiv = document.getElementById('status');
+
+      if (!phone) {
+        statusDiv.innerText = "❌ Inserisci il numero di telefono dell'amico.";
+        statusDiv.style.color = "#ef4444";
+        return;
+      }
+
+      statusDiv.innerText = "📡 Inviando segnale remoto...";
+      statusDiv.style.color = "#38bdf8";
+
+      try {
+        const res = await fetch('http://localhost:3000/api/trigger-sound', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ targetPhone: phone, soundUrl: sound, volume: parseInt(volume), isAlarm: true })
+        });
+        const data = await res.json();
+        
+        if(data.success) {
+          statusDiv.innerText = "✅ Suono avviato sul telefono dell'amico!";
+          statusDiv.style.color = "#22c55e";
+        } else {
+          statusDiv.innerText = "❌ " + data.error;
+          statusDiv.style.color = "#ef4444";
+        }
+      } catch(e) {
+        statusDiv.innerText = "❌ Impossibile connettersi al server Nexos Sound.";
+        statusDiv.style.color = "#ef4444";
+      }
+    }
+
+    async function scanBluetooth() {
+      const list = document.getElementById('deviceList');
+      list.innerHTML = "<p style='font-size:12px; color:#38bdf8;'>Ricerca in corso Web Bluetooth API...</p>";
+
+      if (!navigator.bluetooth) {
+        list.innerHTML = "<p style='font-size:12px; color:#ef4444;'>Bluetooth non supportato direttamente dal browser o richiede APK nativa.</p>";
+        return;
+      }
+
+      try {
+        const device = await navigator.bluetooth.requestDevice({ acceptAllDevices: true });
+        list.innerHTML = `<div class="device-item"><span>📱 ${device.name || 'Dispositivo Sconosciuto'}</span><span style="color:#22c55e;">Connesso</span></div>`;
+      } catch (err) {
+        list.innerHTML = "<p style='font-size:12px; color:#ef4444;'>Nessun dispositivo selezionato o scansione annullata.</p>";
+      }
+    }
+
+    function sendBluetoothSound() {
+      const statusDiv = document.getElementById('status');
+      statusDiv.innerText = "🔊 Trasmissione audio via canale Bluetooth...";
+      statusDiv.style.color = "#10b981";
+    }
+  </script>
+</body>
+</html>
